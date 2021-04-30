@@ -1,0 +1,6 @@
+build/
+out/
+.idea/
+.vscode/
+.vs/
+Application/libs/assimp/
