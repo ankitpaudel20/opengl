@@ -14,7 +14,7 @@ protected:
         shader.SetUniform<glm::mat4*>("model", &matModel);
 
         m_vao.Bind();
-        m_ibo.Bind();
+        // m_ibo.Bind();
         unsigned int diffuseNr = 1;
         unsigned int specularNr = 1;
         //for (unsigned int i = 0; i < m_tex.size(); i++)

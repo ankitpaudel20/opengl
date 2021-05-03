@@ -2,14 +2,11 @@
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
-#include "Shader.h"
-#include "buffer.h"
-#include "Vertexarray.h"
 #include "Camera.h"
+#include "Shader.h"
 #include "glm/gtx/projection.hpp"
 #include "callback.h"
-#include "Drawable.h"
-#include "Shapes.h"
+#include "Vertexarray.h"
 
 int main()
 {
@@ -19,9 +16,10 @@ int main()
 		return -1;
 
 	glfwWindowHint(GLFW_SAMPLES, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 
 	GLFWwindow *window = glfwCreateWindow(1000, 750, "Hello World", nullptr, nullptr);
 
@@ -48,27 +46,27 @@ int main()
 		return -1;
 	}
 
+	int flags;
+	glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+	{
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback(glDebugOutput, nullptr);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+	}
+
 	{
 		//GLcall(glEnable(GL_BLEND));
 		GLcall(glEnable(GL_DEPTH_TEST));
 
 		std::string resPath = searchRes();
-		//Shader basic_shader("../../opengl/res/shaders/line.vert", "../../opengl/res/shaders/line.frag");
 		Shader basic_shader((resPath + "/shaders/line.vert").c_str(), (resPath + "/shaders/line.frag").c_str());
 		basic_shader.Bind();
 
 		glm::mat4 model(1.0);
 		glm::mat4 view(1.0);
 		glm::mat4 projpersp(1.0);
-
-		/*				float vertices[] = {
-						0.0f, 0.5f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-						0.0f, 0.5f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-						0.0f, -0.5, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-						0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-						-0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
-						0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-				};*/
 
 		std::vector<Vertex> tris = {
 			Vertex(vec3(0.0f, 0.5f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f)),
@@ -79,44 +77,25 @@ int main()
 			Vertex(vec3(0.0f, 1.0f, 0.0f), vec4(1.0f, 0.0f, 1.0f, 0.0f)),
 		};
 
+
 		std::vector<unsigned int> indices = {
 			0, 1, 2,
 			3, 4, 5};
 
-		/*float vertices2[] = {
-				  0.0f, 0.0f, 3.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-				  0.0f, 0.0f, 2.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-				  0.0f, 0.5, 2.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-				  0.5f, 0.0f, 2.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-				  -0.5f, 0.0f, 2.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-				  0.0f, 0.5f, 2.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-		  };*/
-
-		Vertexarray linevao, vao1, vao2, vao3;
-		buffer<Vertex, GL_ARRAY_BUFFER> linevbo, vbo1, vbo2, vbo3;
-		buffer<uint32_t, GL_ELEMENT_ARRAY_BUFFER> lineibo, ibo1, ibo2, ibo3;
-
 		std::vector<unsigned> lineindices = {0, 1};
 
-		linevbo.AddData(std::vector<Vertex>{
-			Vertex(vec3(-1.0f, -1.0f, -1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f)),
-			Vertex(vec3(1.0f, 1.0f, 1.0f), vec4(0.0f, 1.0f, 0.0f, 1.0f))});
-		linevao.AddBuffer(linevbo, lineibo);
-		lineibo.AddData(lineindices);
+		Vertexarray vao, vao1;
+		buffer<Vertex, GL_ARRAY_BUFFER> vbo, vbo1;
+		buffer<uint32_t, GL_ELEMENT_ARRAY_BUFFER> ibo, ibo1;
 
-		Drawable<Vertex> testdraw(tris, indices);
-		//Drawable<Vertex> testdraw1(cube::pos, cube::indices);
-		//testdraw1(testdraw);
 
-		/*	vbo3.AddData(std::vector<Vertex>{
-			Vertex(vec3(-1.0f, -1.0f, -1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f)),
-			Vertex(vec3(1.0f, 1.0f, 1.0f), vec4(0.0f, 1.0f, 0.0f, 1.0f))});*/
+		vbo.AddData(tris);
+		ibo.AddData(indices);
+		vao.AddBuffer(vbo, ibo);
 
-		vbo1.AddData(tris);
-		vao1.AddBuffer(vbo1, ibo1);
-		ibo1.AddData(indices);
+		
 
-		for (int i = 0; i < tris.size(); i++)
+		for (int i = 0; i < 6; i++)
 		{
 			tris[i].position.x += 2.0f;
 			tris[i].position.z += 2.0f;
@@ -137,27 +116,18 @@ int main()
 				tris[i].color.z = 1.0;
 		}
 
-		vbo2.AddData(tris);
-		vao2.AddBuffer(vbo2, ibo2);
-		ibo2.AddData(indices);
+		
 
-		std::vector<vec3> trisPos;
-		for (auto &i : tris)
-			trisPos.push_back(i.position);
-
-		const std::vector<Indexdata> trisIndices{
-			{{0, 1, 2}, vec4(1, 0, 0), {vec2(0, 0), vec2(1, 0), vec2(1, 1)}, 1},
-			{{3, 4, 5}, vec4(1, 1, 0), {vec2(0, 0), vec2(1, 0), vec2(1, 1)}, 1}};
-
-		Drawable<Vertex> testdraw2(cube::pos, cube::indices);
+		vbo1.AddData(tris);
+		ibo1.AddData(indices);
+		vao1.AddBuffer(vbo1, ibo1);
 
 		float near_point{0.1f}, far_point(100);
 
 		double LastFrame = 0;
-		//        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		    //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		while (!glfwWindowShouldClose(window))
 		{
-
 			deltatime = glfwGetTime() - LastFrame;
 			LastFrame = glfwGetTime();
 
@@ -174,21 +144,17 @@ int main()
 			basic_shader.SetUniform<glm::mat4 *>("view", &view);
 			basic_shader.SetUniform<glm::mat4 *>("proj", &projpersp);
 
-			testdraw.Draw(basic_shader);
-			testdraw2.Draw(basic_shader);
+			vao.Bind();
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-			/*vao1.Bind();
-			GLcall(glDrawElements(GL_TRIANGLES, ibo1.get_count(), GL_UNSIGNED_INT, nullptr));
+			vao1.Bind();
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-			vao2.Bind();
-			GLcall(glDrawElements(GL_TRIANGLES, ibo2.get_count(), GL_UNSIGNED_INT, nullptr));*/
-
-			GLcall(glLineWidth(2));
-
-			linevao.Bind();
-			lineibo.Bind();
-			auto count = lineibo.get_count();
-			GLcall(glDrawElements(GL_LINES, count, GL_UNSIGNED_INT, nullptr));
+			// GLcall(glLineWidth(2));
+			// linevao.Bind();
+			// lineibo.Bind();
+			// auto count = lineibo.get_count();
+			// GLcall(glDrawElements(GL_LINES, count, GL_UNSIGNED_INT, nullptr));
 
 			GLcall(glfwSwapBuffers(window));
 			GLcall(glfwPollEvents());

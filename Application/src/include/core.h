@@ -32,22 +32,22 @@
 	if (!(x))     \
 		DEBUG_BREAK;
 
-#ifdef _DEBUG
-#define GLcall_P(y, x) \
-	GLClearError();    \
-	y = x;             \
-	ASSERT(GLLogCall(#x, __FILE__, __LINE__))
-#define GLcall(x)   \
-	GLClearError(); \
-	x;              \
-	ASSERT(GLLogCall(#x, __FILE__, __LINE__))
-#else
+//#ifdef _DEBUG
+//#define GLcall_P(y, x) \
+//	GLClearError();    \
+//	y = x;             \
+//	ASSERT(GLLogCall(#x, __FILE__, __LINE__))
+//#define GLcall(x)   \
+//	GLClearError(); \
+//	x;              \
+//	ASSERT(GLLogCall(#x, __FILE__, __LINE__))
+//#else
+//#define GLcall(x) x
+//#define GLcall_P(y, x) y = x
+//#endif
+
 #define GLcall(x) x
 #define GLcall_P(y, x) y = x
-#endif
-
- #define GLcall(x) x
- #define GLcall_P(y, x) y=x
 
 inline void GLClearError()
 {

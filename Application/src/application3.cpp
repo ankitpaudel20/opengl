@@ -26,15 +26,16 @@ int main(int argc, char* argv[])
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef MDEBUG
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#endif
 
 	GLFWwindow* mainWin;
 	GLFWwindow* imguiWin;
 
 	imguiWin = glfwCreateWindow(800, 600, "imgui", NULL, NULL);
 	mainWin = glfwCreateWindow(1000, 750, "main", NULL, NULL);
-	glfwSetInputMode(mainWin, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-	glfwSetInputMode(imguiWin, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 
 	if (!(mainWin && imguiWin))
@@ -52,8 +53,6 @@ int main(int argc, char* argv[])
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
-
-
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -75,6 +74,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+#ifdef MDEBUG
 	int flags;
 	glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
 	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
@@ -84,12 +84,12 @@ int main(int argc, char* argv[])
 		glDebugMessageCallback(glDebugOutput, nullptr);
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 	}
+#endif
 
 	glfwSetFramebufferSizeCallback(mainWin, framebuffer_size_callback);
 	glfwSetCursorPosCallback(mainWin, cursor_position_callback);
 	glfwSetKeyCallback(mainWin, key_callback);
 
-	glfwSetInputMode(mainWin, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	int height, width;
 	glfwGetFramebufferSize(mainWin, &width, &height);
@@ -102,6 +102,8 @@ int main(int argc, char* argv[])
 	auto glvendor = glGetString(GL_VENDOR);
 	glEnable(GL_MULTISAMPLE);
 	//glEnable(GL_CULL_FACE);
+	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 	GLcall(glEnable(GL_DEPTH_TEST));
 #pragma endregion
 
@@ -113,10 +115,33 @@ int main(int argc, char* argv[])
 		Shader cubeShader(resPath + "/shaders/cube_final.vert", resPath + "/shaders/cube_final.frag");
 		Shader cubeShader2(resPath + "/shaders/cube_final2.vert", resPath + "/shaders/cube_final2.frag");
 
-		Model blocks(resPath + "/3dModels/backpack/backpack.obj");
+		// Model blocks(resPath + "/3dModels/backpack/backpack.obj");
+		//Model blocks(resPath + "/3dModels/gun/Handgun_obj.obj");
+		Model blocks(resPath + "/3dModels/nanosuit/nanosuit.obj");
 
 
+		std::vector<Mesh> meshes;
+		for (auto & i:blocks.meshes)
+		{
+			meshes.emplace_back(i.getvertices(),i.getindices(),i.getTextures());
+		}
 
+		std::vector<Vertex2> vertices;
+		std::vector<uint32_t>indices;
+
+		for (auto & i:blocks.meshes)
+		{
+			auto vert=i.getvertices();
+			auto ind=i.getindices();
+
+			vertices.resize(vertices.size()+vert.size());
+			indices.resize(indices.size()+ind.size());
+
+			vertices.insert(vertices.end(),vert.begin(),vert.end());
+			indices.insert(indices.end(),ind.begin(),ind.end());
+		}		
+
+		Drawable<Vertex2> test(vertices,indices);
 
 		std::vector<Drawable<Vertex>> lamps;
 		lamps.reserve(NR_POINT_LIGHTS);
@@ -231,7 +256,15 @@ int main(int argc, char* argv[])
 			cubeShader2.SetUniform<float>("material.specularStrength", cubeMaterial.SpecularStrength);
 
 
-			blocks.Draw(cubeShader2, rotation, translation, scaling);
+			 blocks.Draw(cubeShader2, rotation, translation, scaling);
+
+			/*for (auto & i :meshes)
+			{
+				i.rotation=rotation;
+				i.translation=translation;
+				i.scaling=scaling;
+				i.Draw(cubeShader2);
+			}*/
 
 			glfwSwapBuffers(mainWin);
 
@@ -271,39 +304,37 @@ int main(int argc, char* argv[])
 
 					ImGui::SliderFloat("far point", &far_point, 0.0f, 200.0f);
 					ImGui::SliderFloat("POV", &perspective_fov, 0.0f, 180.0f);
+					ImGui::End();
+
+					ImGui::Begin("Information");
+					ImGui::Text("no of Drawcalls :%d",noDrawCalls);
+					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
 					ImGui::Text("aspect Ratio : %f", aspect_ratio);
 					ImGui::Text("value of facing vector is %.3f %.3f %.3f", cam.Camera_Facing_Direction.x, cam.Camera_Facing_Direction.y, cam.Camera_Facing_Direction.z);
 					ImGui::Text("value of pitch = %.3f yaw = %.3f roll = %.3f", glm::degrees(cam.getAngles().m_pitch), glm::degrees(cam.getAngles().m_yaw), glm::degrees(cam.getAngles().m_roll));
 					ImGui::Text("value of up vector is %.3f %.3f %.3f", cam.Camera_Up.x, cam.Camera_Up.y, cam.Camera_Up.z);
-					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-					ImGui::End();
-
-					ImGui::Begin("Information");
-					ImGui::Text("Model matrix: ");
 					ImGui::Text("glrenderer %s", glrenderer);
 					ImGui::Text("glversion %s", glversion);
 					ImGui::Text("glvendor %s", glvendor);
 
-					ImGui::Text("( %.3f ,%.3f, %.3f, %.3f )\n( %.3f ,%.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )",
-						model[0][0], model[0][1], model[0][2], model[0][3],
-						model[1][0], model[1][1], model[1][2], model[1][3],
-						model[2][0], model[2][1], model[2][2], model[2][3],
-						model[3][0], model[3][1], model[3][2], model[3][3]);
-
-					ImGui::Text("View matrix: ");
-					ImGui::Text("( %.3f ,%.3f, %.3f, %.3f )\n( %.3f ,%.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )",
-						view[0][0], view[0][1], view[0][2], view[0][3],
-						view[1][0], view[1][1], view[1][2], view[1][3],
-						view[2][0], view[2][1], view[2][2], view[2][3],
-						view[3][0], view[3][1], view[3][2], view[3][3]);
-
-					ImGui::Text("Projection matrix: ");
-					ImGui::Text("( %.3f ,%.3f, %.3f, %.3f )\n( %.3f ,%.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )",
-						projpersp[0][0], projpersp[0][1], projpersp[0][2], projpersp[0][3],
-						projpersp[1][0], projpersp[1][1], projpersp[1][2], projpersp[1][3],
-						projpersp[2][0], projpersp[2][1], projpersp[2][2], projpersp[2][3],
-						projpersp[3][0], projpersp[3][1], projpersp[3][2], projpersp[3][3]);
+					// ImGui::Text("( %.3f ,%.3f, %.3f, %.3f )\n( %.3f ,%.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )",
+					// 	model[0][0], model[0][1], model[0][2], model[0][3],
+					// 	model[1][0], model[1][1], model[1][2], model[1][3],
+					// 	model[2][0], model[2][1], model[2][2], model[2][3],
+					// 	model[3][0], model[3][1], model[3][2], model[3][3]);
+					// ImGui::Text("View matrix: ");
+					// ImGui::Text("( %.3f ,%.3f, %.3f, %.3f )\n( %.3f ,%.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )",
+					// 	view[0][0], view[0][1], view[0][2], view[0][3],
+					// 	view[1][0], view[1][1], view[1][2], view[1][3],
+					// 	view[2][0], view[2][1], view[2][2], view[2][3],
+					// 	view[3][0], view[3][1], view[3][2], view[3][3]);
+					// ImGui::Text("Projection matrix: ");
+					// ImGui::Text("( %.3f ,%.3f, %.3f, %.3f )\n( %.3f ,%.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )\n( %.3f, %.3f, %.3f, %.3f )",
+					// 	projpersp[0][0], projpersp[0][1], projpersp[0][2], projpersp[0][3],
+					// 	projpersp[1][0], projpersp[1][1], projpersp[1][2], projpersp[1][3],
+					// 	projpersp[2][0], projpersp[2][1], projpersp[2][2], projpersp[2][3],
+					// 	projpersp[3][0], projpersp[3][1], projpersp[3][2], projpersp[3][3]);
 
 					ImGui::Text("cursor pos: %f , %f", mx, my);
 					ImGui::Text("captured: %d", captured);

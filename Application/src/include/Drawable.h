@@ -8,6 +8,8 @@
 #include "Texture.h"
 #include "Shader.h"
 
+uint32_t noDrawCalls=0;
+
 inline vec3 operator*(glm::mat4 mat, vec3 vec)
 {
 	glm::vec4 temp(vec.x, vec.y, vec.z, 1);
@@ -36,7 +38,6 @@ protected:
 		shader.SetUniform<glm::mat4 *>("model", &matModel);
 
 		m_vao.Bind();
-		m_ibo.Bind();
 		for (int i = 0; i < m_tex.size(); i++)
 			m_tex[i].Bind(i);
 	}
@@ -181,15 +182,16 @@ public:
 
 	~Drawable()
 	{
-		for (auto &a : m_tex)
-		{
-			a.free();
-		}
-		
+		for (auto &a : m_tex)		
+			a.free();	
 	}
-
+bool drawn=false;
 	void Draw(Shader &shader)
 	{
+		if(!drawn){
+		noDrawCalls++;
+		drawn=true;
+		}
 		preDraw(shader);
 		GLcall(glDrawElements(m_primitve, m_ibo.get_count(), GL_UNSIGNED_INT, nullptr));
 		postDraw();

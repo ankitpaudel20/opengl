@@ -207,10 +207,20 @@ private:
 			//std::string path = str.C_Str();
 			// check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
 			bool skip = false;
+			std::string relPath(str.C_Str());
+			#ifndef _WIN32
+			size_t pos=0;
+			pos=relPath.find("\\");
+			while (pos!=std::string::npos)
+			{
+				relPath.replace(pos,1,"/");
+				pos=relPath.find("\\");
+			}				
+			#endif
 
 			for (auto &j:textures_loaded)
 			{
-				if (j.getPath()== this->directory + "/" + std::string(str.C_Str()))
+				if (j.getPath()== this->directory + "/" + relPath)
 				{
 					textures.push_back(j);
 
@@ -231,7 +241,7 @@ private:
 			//}
 			if (!skip)
 			{   // if texture hasn't been loaded already, load it
-				Texture texture(this->directory + "/" + str.C_Str());
+				Texture texture(this->directory + "/" + relPath);
 				texture.type = typeName;
 				textures.push_back(texture);
 				textures_loaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.

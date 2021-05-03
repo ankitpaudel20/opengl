@@ -36,8 +36,6 @@ public:
 #ifdef MDEBUG
 
 		m_data = data;
-		/* m_data.resize(count);
-		std::copy(data, data + count, m_data.begin());*/
 		m_data.shrink_to_fit();
 
 #endif
@@ -49,8 +47,7 @@ public:
 
 		createbuffer(m_bufferID);
 		GLcall(glBindBuffer(TYPE, m_bufferID));
-
-		GLcall(glBufferData(TYPE, sizeof(T) * data.size(), &data[0], GL_DYNAMIC_DRAW));
+		GLcall(glBufferData(TYPE, sizeof(T) * data.size(), &data[0], GL_STATIC_DRAW));
 		GLcall(glBindBuffer(TYPE, 0));
 	}
 
@@ -148,7 +145,7 @@ public:
 			deletebuffer(m_bufferID);
 			createbuffer(m_bufferID);
 			GLcall(glBindBuffer(TYPE, m_bufferID));
-			GLcall(glBufferData(TYPE, buffersize + data.size() * sizeof(T), nullptr, GL_DYNAMIC_DRAW));
+			GLcall(glBufferData(TYPE, buffersize + data.size() * sizeof(T), nullptr, GL_STATIC_DRAW));
 			GLcall(glBufferSubData(TYPE, 0, buffersize, tempdata));
 			GLcall(glBufferSubData(TYPE, buffersize, sizeof(T) * data.size(), &data[0]));
 			GLcall(glBindBuffer(TYPE, 0));
